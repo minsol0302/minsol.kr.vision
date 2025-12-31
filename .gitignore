@@ -1,0 +1,81 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Model files (usually very large)
+*.pt
+*.pth
+*.h5
+*.pkl
+*.ckpt
+*.safetensors
+*.onnx
+*.pb
+*.tflite
+
+# Dataset files
+*.idx3-ubyte
+*.idx1-ubyte
+*.gz
+*.zip
+*.tar
+*.tar.gz
+*.npz
+*.npy
+
+# Data directories
+app/data/
+mnist/data/
+app/diffusers/outputs/
+app/diffusers/models/
+
+# Image files (if too many/large)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+
+# Video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# XML model files (haarcascade, etc.)
+*.xml
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment files
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
