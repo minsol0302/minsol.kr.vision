@@ -1,0 +1,73 @@
+name: Deploy Vision Service to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build Docker image
+        run: |
+          docker build -t vision.minsol.kr:latest -f Dockerfile .
+
+      - name: Save Docker image
+        run: |
+          docker save vision.minsol.kr:latest | gzip > vision-image.tar.gz
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy Docker image to EC2
+        run: |
+          scp -i ~/.ssh/id_rsa -P ${{ secrets.EC2_SSH_PORT || 22 }} \
+            vision-image.tar.gz \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/
+
+      - name: Deploy to EC2
+        run: |
+          ssh -i ~/.ssh/id_rsa -p ${{ secrets.EC2_SSH_PORT || 22 }} \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            # Load Docker image
+            docker load -i /tmp/vision-image.tar.gz
+            rm /tmp/vision-image.tar.gz
+            
+            # Stop and remove existing container
+            docker stop vision.minsol.kr || true
+            docker rm vision.minsol.kr || true
+            
+            # Run new container
+            docker run -d \
+              --name vision.minsol.kr \
+              --restart unless-stopped \
+              -p 8002:8000 \
+              -e ENVIRONMENT=production \
+              vision.minsol.kr:latest
+            
+            # Clean up old images
+            docker image prune -f
+          EOF
+
+      - name: Health Check
+        run: |
+          sleep 10
+          ssh -i ~/.ssh/id_rsa -p ${{ secrets.EC2_SSH_PORT || 22 }} \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            "curl -f http://localhost:8002/health || curl -f http://localhost:8002/docs || exit 1"
+
